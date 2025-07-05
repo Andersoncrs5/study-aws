@@ -146,5 +146,48 @@ public class S3Service {
         }
     }
 
+    public void copyObject(String sourceBucket, String sourceKey, String destinationBucket, String destinationKey) {
+        try {
+            CopyObjectRequest copyObjectRequest = CopyObjectRequest.builder()
+                    .sourceBucket(sourceBucket)
+                    .sourceKey(sourceBucket)
+                    .destinationBucket(destinationBucket)
+                    .destinationKey(destinationKey)
+                    .build();
+
+            s3Client.copyObject(copyObjectRequest);
+
+            System.out.printf("Objeto '%s/%s' copiado para '%s/%s' com sucesso!%n",
+                sourceBucket, sourceKey, destinationBucket, destinationKey);
+        } catch (S3Exception e) {
+            System.err.printf("Erro ao copiar objeto '%s/%s': %s%n", sourceBucket, sourceKey, e.getMessage());
+            throw new RuntimeException("Erro ao copiar objeto no S3: " + e.getMessage(), e);
+        }
+        catch (Exception e) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,"Error the upload file");
+        }
+    }
+
+    public void moveObject(String sourceBucket, String sourceKey, String destinationBucket, String destinationKey) {
+        try {
+            copyObject(sourceBucket, sourceKey, destinationBucket, destinationKey);
+
+            DeleteObjectRequest deleteObjectRequest = DeleteObjectRequest.builder()
+                    .bucket(sourceBucket)
+                    .key(sourceKey)
+                    .build();
+
+            s3Client.deleteObject(deleteObjectRequest);
+            System.out.printf("Objeto original '%s/%s' deletado com sucesso após mover.%n", sourceBucket, sourceKey);
+        } catch (S3Exception e) {
+            System.err.printf("Erro ao copiar objeto '%s/%s': %s%n", sourceBucket, sourceKey, e.getMessage());
+            throw new RuntimeException("Erro ao copiar objeto no S3: " + e.getMessage(), e);
+        }
+        catch (Exception e) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,"Error the upload file");
+        }
+    }
+
+
 
 }
