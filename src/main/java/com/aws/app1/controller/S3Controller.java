@@ -10,7 +10,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import software.amazon.awssdk.core.ResponseInputStream;
-import software.amazon.awssdk.services.s3.model.GetObjectAclResponse;
 import software.amazon.awssdk.services.s3.model.GetObjectResponse;
 
 import java.io.IOException;
@@ -122,6 +121,37 @@ public class S3Controller {
         } catch (RuntimeException e) {
             return ResponseEntity.internalServerError().body("Error moving object: " + e.getMessage());
         }
+    }
+
+    @PostMapping(value = "/put-file-metadata", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<?> putFileWithMetadata(@ModelAttribute UploadRequestMetadataDTO requestDTO) {
+        String bucketName = requestDTO.getBucketName();
+        String key = requestDTO.getKey();
+        MultipartFile file = requestDTO.getFile();
+        Long userId = requestDTO.getUserId();
+
+        if (file == null || file.isEmpty() || bucketName.isEmpty() || key.isEmpty()) {
+            return ResponseEntity.badRequest().body("File and metadata (bucketName, key) are required.");
+        }
+
+        service.checkBucketExists(bucketName);
+        service.putObjectWithMetadata(bucketName, key, file, userId);
+
+        return ResponseEntity.ok("File sended to bucket with metadata!");
+    }
+
+    @GetMapping("/object-metadata")
+    public ResponseEntity<?> getHeadObject(@RequestParam String bucketName, @RequestParam String key) {
+        return ResponseEntity.ok(
+                service.getHeaderObject(bucketName, key)
+        );
+    }
+
+    @GetMapping("/metadada-bucket")
+    public ResponseEntity<?> getResponse(@RequestParam String bucketName) {
+        return ResponseEntity.ok(
+                this.service.getHeaderBucket(bucketName)
+        );
     }
 
 }
