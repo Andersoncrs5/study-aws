@@ -1,10 +1,8 @@
 package com.aws.app1.controller;
 
-import com.aws.app1.controller.DTOs.CreateBucketDTO;
-import com.aws.app1.controller.DTOs.DeleteFileDTO;
-import com.aws.app1.controller.DTOs.FileUploadDTO;
-import com.aws.app1.controller.DTOs.UploadRequestDTO;
+import com.aws.app1.controller.DTOs.*;
 import com.aws.app1.services.S3Service;
+import io.swagger.v3.oas.annotations.Operation;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -108,6 +106,22 @@ public class S3Controller {
         }
     }
 
+    @PostMapping("/copy-objects")
+    public ResponseEntity<?> copyObject(@RequestBody CopyMoveObjectDTO dto) {
+        service.copyObject(dto.sourceBucket(), dto.sourceKey(), dto.destinationBucket(), dto.destinationKey());
 
+        return ResponseEntity.ok("Object copied successfully!");
+    }
+
+    @PostMapping("/move-object")
+    @Operation(summary = "Move an object from one location to another (copy then delete)")
+    public ResponseEntity<String> moveObject(@RequestBody CopyMoveObjectDTO dto) {
+        try {
+            service.moveObject(dto.sourceBucket(), dto.sourceKey(), dto.destinationBucket(), dto.destinationKey());
+            return ResponseEntity.ok("Object moved successfully!");
+        } catch (RuntimeException e) {
+            return ResponseEntity.internalServerError().body("Error moving object: " + e.getMessage());
+        }
+    }
 
 }
