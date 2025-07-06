@@ -70,6 +70,28 @@ public class DynamoDbTableInitializer implements CommandLineRunner {
 
     }
 
+    private void createUserMetric() {
+        String tableName = "users_metric";
+
+        if (!tableExists(tableName)) { // Correção aqui
+            CreateTableRequest request = CreateTableRequest.builder()
+                    .tableName(tableName)
+                    .keySchema(KeySchemaElement.builder()
+                            .attributeName("userId")
+                            .keyType(KeyType.HASH)
+                            .build())
+                    .attributeDefinitions(AttributeDefinition.builder()
+                            .attributeName("userId")
+                            .attributeType(ScalarAttributeType.S)
+                            .build())
+                    .billingMode(BillingMode.PAY_PER_REQUEST)
+                    .build();
+
+            dynamoDbClient.createTable(request);
+            System.out.println("Tabela 'users_metric' criada!");
+        }
+    }
+
     private boolean tableExists(String tableName) {
         ListTablesResponse tables = dynamoDbClient.listTables();
         return !tables.tableNames().contains(tableName);
