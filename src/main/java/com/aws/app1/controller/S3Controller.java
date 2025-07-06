@@ -9,10 +9,13 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.server.ResponseStatusException;
 import software.amazon.awssdk.core.ResponseInputStream;
 import software.amazon.awssdk.services.s3.model.GetObjectResponse;
 
 import java.io.IOException;
+import java.net.URL;
+import java.util.Collections;
 import java.util.List;
 
 @RestController
@@ -32,8 +35,9 @@ public class S3Controller {
     public ResponseEntity<?> putFile(@ModelAttribute UploadRequestDTO requestDTO) {
 
         String bucketName = requestDTO.getBucketName();
-        String key = requestDTO.getKey();
         MultipartFile file = requestDTO.getFile();
+        String key = requestDTO.getKey();
+        String content = requestDTO.getContent();
 
         if (file == null || file.isEmpty() || bucketName == null || key == null || bucketName.isEmpty() || key.isEmpty()) {
             return ResponseEntity.badRequest().body("File and metadata (bucketName, key) are required.");
@@ -41,7 +45,7 @@ public class S3Controller {
 
         service.checkBucketExists(bucketName);
 
-        service.putObject(bucketName, key, file);
+        service.putObject(bucketName, key, file, content);
 
         return ResponseEntity.ok("File sended to bucket!");
     }
@@ -152,6 +156,33 @@ public class S3Controller {
         return ResponseEntity.ok(
                 this.service.getHeaderBucket(bucketName)
         );
+    }
+
+    @GetMapping("/list-by-user")
+    @Operation(summary = "List all objects in a bucket uploaded by a specific user ID")
+    public ResponseEntity<List<String>> listObjectsByUserId(
+            @RequestParam String bucketName,
+            @RequestParam Long userId,
+            @RequestParam(required = false) String prefix) {
+        try {
+            service.checkBucketExists(bucketName);
+            List<String> files = service.listObjectsByUserId(bucketName, userId, prefix);
+            return ResponseEntity.ok(files);
+        } catch (ResponseStatusException e) {
+            throw e;
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(Collections.singletonList("Erro inesperado ao listar arquivos: " + e.getMessage()));
+        }
+    }
+
+    @GetMapping("/url")
+    public ResponseEntity<String> getUrl(
+            @RequestParam String bucket,
+            @RequestParam String key,
+            @RequestParam Long day
+    ) {
+        URL url = service.generatePresignedDownloadUrl(bucket, key, day);
+        return ResponseEntity.ok(url.toString());
     }
 
 }

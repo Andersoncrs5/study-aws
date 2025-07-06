@@ -23,4 +23,6 @@ public class UploadRequestDTO {
 
     @NotBlank
     private String key;
+    @NotBlank
+    private String content;
 }
