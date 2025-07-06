@@ -445,6 +445,7 @@ public class S3Service {
 
 //============================================ SOFTDELETES/ LIFECYCLE POLICES ==========================================
 
+    @Async
     public void applyLifecyclePolicy(String bucketName, String prefix) {
         try {
             LifecycleRule rule1 = LifecycleRule.builder()
@@ -496,6 +497,7 @@ public class S3Service {
         }
     }
 
+    @Async
     public String generatePresignedUploadUrl(String bucketName, String key, long expirationSeconds, String contentType, Long userId) {
         try {
             Map<String, String> metadata = new HashMap<>();
@@ -524,6 +526,40 @@ public class S3Service {
         }
     }
 
+//================================================== OBJECT WITH PUBLIC ================================================
+
+    @Async
+    public void makeObjectPublic(String bucketName, String key) {
+        try {
+            s3Client.headObject(HeadObjectRequest.builder().bucket(bucketName).key(key).build());
+
+            PutObjectAclRequest putObjectAclRequest = PutObjectAclRequest.builder()
+                    .bucket(bucketName)
+                    .key(key)
+                    .acl(ObjectCannedACL.PUBLIC_READ)
+                    .build();
+
+            s3Client.putObjectAcl(putObjectAclRequest);
+            System.out.printf("Objeto '%s/%s' foi tornado público com sucesso.%n", bucketName, key);
+        } catch (NoSuchKeyException e) {
+            System.err.printf("Objeto '%s/%s' não encontrado para ser tornado público.%n", bucketName, key);
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Objeto '" + key + "' não encontrado no bucket '" + bucketName + "'.", e);
+        } catch (S3Exception e) {
+            System.err.printf("Erro ao tornar objeto '%s/%s' público: %s%n", bucketName, key, e.getMessage());
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Erro ao configurar acesso público para o objeto S3: " + e.getMessage(), e);
+        }
+    }
+
+    @Async
+    public String getPublicObjectUrl(String bucketName, String key) {
+        try {
+            URL url = new URL("http://localhost:4566/" + bucketName + "/" + key);
+            return url.toString();
+        } catch (java.net.MalformedURLException e) {
+            System.err.printf("Erro ao construir URL pública para '%s/%s': %s%n", bucketName, key, e.getMessage());
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Erro interno ao gerar URL pública.", e);
+        }
+    }
 
 
 }
