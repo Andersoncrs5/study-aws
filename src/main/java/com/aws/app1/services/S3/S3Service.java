@@ -1,4 +1,4 @@
-package com.aws.app1.services;
+package com.aws.app1.services.S3;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,6 +21,7 @@ import java.io.InputStream;
 import java.net.URL;
 import java.time.Duration;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -32,7 +33,6 @@ public class S3Service {
     @Autowired
     private S3Presigner s3Presigner;
 
-    @Async
     public void createBucket(String bucketName) {
         try {
             CreateBucketRequest createBucketRequest = CreateBucketRequest.builder()
@@ -46,7 +46,6 @@ public class S3Service {
         }
     }
 
-    @Async
     public void checkBucketExists(String bucketName) {
         try {
             HeadBucketRequest head = HeadBucketRequest.builder()
@@ -63,7 +62,6 @@ public class S3Service {
         }
     }
 
-    @Async
     public List<String> listAllBucket() {
         try {
             ListBucketsRequest list = ListBucketsRequest.builder().build();
@@ -79,7 +77,6 @@ public class S3Service {
         }
     }
 
-    @Async
     public void putObject(String bucketName, String key, MultipartFile filePath, String content) {
         try {
             s3Client.putObject(PutObjectRequest.builder()
@@ -97,7 +94,6 @@ public class S3Service {
         }
     }
 
-    @Async
     public List<String> listObjects(String buckteName) {
         try {
             ListObjectsV2Request listObjectsV2Request = ListObjectsV2Request.builder()
@@ -115,7 +111,6 @@ public class S3Service {
         }
     }
 
-    @Async
     public void deleteObject(String bucketName, String key) {
         try {
             DeleteObjectRequest deletedObject = DeleteObjectRequest.builder()
@@ -131,7 +126,6 @@ public class S3Service {
         }
     }
 
-    @Async
     public void deleteBucket(String bucketName) {
         try {
             listObjects(bucketName).forEach(key -> deleteObject(bucketName, key));
@@ -147,7 +141,6 @@ public class S3Service {
         }
     }
 
-    @Async
     public ResponseInputStream<GetObjectResponse> downloadFile(String bucketName, String key) {
         try {
             GetObjectRequest getObjectRequest = GetObjectRequest.builder()
@@ -166,7 +159,6 @@ public class S3Service {
         }
     }
 
-    @Async
     public void copyObject(String sourceBucket, String sourceKey, String destinationBucket, String destinationKey) {
         try {
             CopyObjectRequest copyObjectRequest = CopyObjectRequest.builder()
@@ -188,7 +180,6 @@ public class S3Service {
         }
     }
 
-    @Async
     public void moveObject(String sourceBucket, String sourceKey, String destinationBucket, String destinationKey) {
         try {
             copyObject(sourceBucket, sourceKey, destinationBucket, destinationKey);
@@ -208,7 +199,6 @@ public class S3Service {
         }
     }
 
-    @Async
     public void putObjectWithMetadata(String bucketName, String key, MultipartFile file, Long userId) {
         String contentType = file.getContentType();
         if (contentType.isBlank() || (!contentType.startsWith("image/") && !contentType.equals("application/pdf") && !contentType.equals("text/plain"))) {
@@ -238,7 +228,6 @@ public class S3Service {
         }
     }
 
-    @Async
     public Map<String, String> getHeaderObject(String bucketName, String key) {
         try {
             HeadObjectRequest headObjectRequest = HeadObjectRequest.builder()
@@ -255,7 +244,6 @@ public class S3Service {
         }
     }
 
-    @Async
     public List<String> listObjectsByUserId(String bucketName, Long userId, String prefix) {
         List<String> userFiles = new ArrayList<>();
         String targetUserIdString = String.valueOf(userId);
@@ -302,7 +290,6 @@ public class S3Service {
         }
     }
 
-    @Async
     public String getHeaderBucket(String bucketName) {
         HeadBucketRequest headBucketRequest = HeadBucketRequest.builder()
                 .bucket(bucketName)
@@ -312,7 +299,6 @@ public class S3Service {
         return headBucketResponse.bucketRegion();
     }
 
-    @Async
     public URL generatePresignedDownloadUrl(String bucketName, String key, long expirationDays) {
         try {
             GetObjectRequest getObjectRequest = GetObjectRequest.builder()
@@ -334,7 +320,6 @@ public class S3Service {
 
 //================================================= VERSIONING =========================================================
 
-    @Async
     public void enableBucketVersioning(String bucketName) {
         try {
             PutBucketVersioningRequest putBucketVersioningRequest = PutBucketVersioningRequest.builder()
@@ -352,7 +337,6 @@ public class S3Service {
         }
     }
 
-    @Async
     public void BucketVersioning(String bucketName) {
         try {
             PutBucketVersioningRequest putBucketVersioningRequest = PutBucketVersioningRequest.builder()
@@ -370,7 +354,6 @@ public class S3Service {
         }
     }
 
-    @Async
     public List<ObjectVersion> listObjectVersions(String bucketName, String key) {
         List<ObjectVersion> versions = new ArrayList<>();
 
@@ -400,7 +383,6 @@ public class S3Service {
 
     }
 
-    @Async
     public InputStream downloadSpecificObjectVersion(String bucketName, String key, String versionId) {
         try {
 
@@ -423,7 +405,6 @@ public class S3Service {
         }
     }
 
-    @Async
     public void deleteSpecificObjectVersion(String bucketName, String key, String versionId) {
         try {
             DeleteObjectRequest deleteObjectRequest = DeleteObjectRequest.builder()
@@ -445,7 +426,6 @@ public class S3Service {
 
 //============================================ SOFTDELETES/ LIFECYCLE POLICES ==========================================
 
-    @Async
     public void applyLifecyclePolicy(String bucketName, String prefix) {
         try {
             LifecycleRule rule1 = LifecycleRule.builder()
@@ -497,7 +477,6 @@ public class S3Service {
         }
     }
 
-    @Async
     public String generatePresignedUploadUrl(String bucketName, String key, long expirationSeconds, String contentType, Long userId) {
         try {
             Map<String, String> metadata = new HashMap<>();
@@ -528,7 +507,6 @@ public class S3Service {
 
 //================================================== OBJECT WITH PUBLIC ================================================
 
-    @Async
     public void makeObjectPublic(String bucketName, String key) {
         try {
             s3Client.headObject(HeadObjectRequest.builder().bucket(bucketName).key(key).build());
@@ -550,7 +528,6 @@ public class S3Service {
         }
     }
 
-    @Async
     public String getPublicObjectUrl(String bucketName, String key) {
         try {
             URL url = new URL("http://localhost:4566/" + bucketName + "/" + key);
@@ -561,5 +538,89 @@ public class S3Service {
         }
     }
 
+    @Async
+    public CompletableFuture<String> initiateMultipartUpload(String bucketName, String key, String contentType, Map<String, String> metadata) {
+        try {
+            CreateMultipartUploadRequest createMultipartUploadRequest = CreateMultipartUploadRequest.builder()
+                    .bucket(bucketName)
+                    .key(key)
+                    .contentType(contentType)
+                    .metadata(metadata)
+                    .build();
+
+            CreateMultipartUploadResponse response = s3Client.createMultipartUpload(createMultipartUploadRequest);
+            String uploadId = response.uploadId();
+            System.out.printf("Upload multipart para '%s/%s' iniciado. Upload ID: %s%n", key, bucketName, uploadId);
+            return CompletableFuture.completedFuture(uploadId);
+        } catch (S3Exception e) {
+            System.err.printf("Erro ao iniciar upload multipart para '%s/%s': %s%n", bucketName, key, e.getMessage());
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Erro ao iniciar upload multipart: " + e.getMessage(), e);
+        }
+    }
+
+    @Async
+    public CompletableFuture<String> uploadPart(String bucketName, String key, String uploadId, int partNumber, InputStream partData, long partSize) {
+        try {
+            UploadPartRequest uploadPartRequest = UploadPartRequest.builder()
+                    .bucket(bucketName)
+                    .key(key)
+                    .uploadId(uploadId)
+                    .partNumber(partNumber)
+                    .contentLength(partSize)
+                    .build();
+
+            UploadPartResponse response = s3Client.uploadPart(uploadPartRequest, RequestBody.fromInputStream(partData, partSize));
+            System.out.printf("Parte %d do upload %s para '%s/%s' concluída. ETag: %s%n", partNumber, uploadId, key, bucketName, response.eTag());
+            return CompletableFuture.completedFuture(response.eTag());
+        } catch (S3Exception e) {
+            System.err.printf("Erro ao fazer upload da parte %d para '%s/%s' (Upload ID: %s): %s%n", partNumber, key, bucketName, uploadId, e.getMessage());
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Erro ao fazer upload da parte: " + e.getMessage(), e);
+        } catch (Exception e) {
+            System.err.printf("Erro de I/O ao ler dados da parte %d para '%s/%s' (Upload ID: %s): %s%n", partNumber, key, bucketName, uploadId, e.getMessage());
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Erro de I/O ao processar parte para upload: " + e.getMessage(), e);
+        }
+    }
+
+    @Async
+    public CompletableFuture<String> completeMultipartUpload(String bucketName, String key, String uploadId, List<CompletedPart> completedParts) {
+        try {
+            CompleteMultipartUploadRequest completeMultipartUploadRequest = CompleteMultipartUploadRequest.builder()
+                    .bucket(bucketName)
+                    .key(key)
+                    .uploadId(uploadId)
+                    .multipartUpload(CompletedMultipartUpload.builder()
+                            .parts(completedParts)
+                            .build())
+                    .build();
+
+            CompleteMultipartUploadResponse response = s3Client.completeMultipartUpload(completeMultipartUploadRequest);
+
+            System.out.printf("Upload multipart para '%s/%s' (Upload ID: %s) concluído. ETag final: %s%n", key, bucketName, uploadId, response.eTag());
+            return CompletableFuture.completedFuture(response.eTag());
+        } catch (S3Exception e) {
+            System.err.printf("Erro ao completar upload multipart para '%s/%s' (Upload ID: %s): %s%n", key, bucketName, uploadId, e.getMessage());
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Erro ao completar upload multipart: " + e.getMessage(), e);
+        }
+    }
+
+    @Async
+    public CompletableFuture<Void> abortMultipartUpload(String bucketName, String key, String uploadId) {
+        try {
+            AbortMultipartUploadRequest abortMultipartUploadRequest = AbortMultipartUploadRequest.builder()
+                    .bucket(bucketName)
+                    .key(key)
+                    .uploadId(uploadId)
+                    .build();
+
+            s3Client.abortMultipartUpload(abortMultipartUploadRequest);
+            System.out.printf("Upload multipart para '%s/%s' (Upload ID: %s) abortado com sucesso.%n", key, bucketName, uploadId);
+
+            return CompletableFuture.completedFuture(null);
+        } catch (S3Exception e) {
+            System.err.printf("Erro ao abortar upload multipart para '%s/%s' (Upload ID: %s): %s%n", key, bucketName, uploadId, e.getMessage());
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Erro ao abortar upload multipart: " + e.getMessage(), e);
+        }
+
+    }
 
 }

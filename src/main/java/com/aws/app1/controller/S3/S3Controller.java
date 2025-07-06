@@ -1,7 +1,7 @@
-package com.aws.app1.controller;
+package com.aws.app1.controller.S3;
 
-import com.aws.app1.controller.DTOs.*;
-import com.aws.app1.services.S3Service;
+import com.aws.app1.controller.S3.S3DTOs.*;
+import com.aws.app1.services.S3.S3Service;
 import io.swagger.v3.oas.annotations.Operation;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
@@ -13,16 +13,17 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 import software.amazon.awssdk.core.ResponseInputStream;
 import software.amazon.awssdk.services.s3.S3Client;
-import software.amazon.awssdk.services.s3.model.GetObjectResponse;
-import software.amazon.awssdk.services.s3.model.HeadObjectRequest;
-import software.amazon.awssdk.services.s3.model.HeadObjectResponse;
-import software.amazon.awssdk.services.s3.model.ObjectVersion;
+import software.amazon.awssdk.services.s3.model.*;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ExecutionException;
+import java.util.stream.Collectors;
 
 @RestController
 @RequiredArgsConstructor
@@ -295,7 +296,7 @@ public class S3Controller {
     public ResponseEntity<String> makeObjectPublic(
             @RequestParam String bucketName,
             @RequestParam String key) {
-        service.checkBucketExists(bucketName); // Garante que o bucket existe
+        service.checkBucketExists(bucketName);
         service.makeObjectPublic(bucketName, key);
         return ResponseEntity.ok("Object '" + key + "' in bucket '" + bucketName + "' is now public!");
     }
@@ -308,6 +309,112 @@ public class S3Controller {
         service.checkBucketExists(bucketName);
         String publicUrl = service.getPublicObjectUrl(bucketName, key);
         return ResponseEntity.ok(publicUrl);
+    }
+
+    @PostMapping("/multipart/initiate")
+    @Operation(summary = "Initiate a multipart upload and get an Upload ID")
+    public ResponseEntity<String> initiateMultipartUpload(@RequestBody InitiateMultipartUploadRequest request) {
+        try {
+            service.checkBucketExists(request.bucketName());
+            Map<String, String> metadata = new HashMap<>();
+
+            if (request.metadata() != null) {
+                metadata.putAll(request.metadata());
+            }
+
+            String uploadId = service.initiateMultipartUpload(
+                    request.bucketName(),
+                    request.key(),
+                    request.contentType(),
+                    metadata
+            ).get();
+
+            return ResponseEntity.ok(uploadId);
+        } catch (InterruptedException | ExecutionException e) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Erro ao iniciar upload multipart: " + e.getMessage(), e);
+        } catch (ResponseStatusException e) {
+            throw e;
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body("Erro inesperado: " + e.getMessage());
+        }
+    }
+
+    @PostMapping(value = "/multipart/upload-part", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @Operation(summary = "Upload a single part of a multipart upload")
+    public ResponseEntity<String> uploadPart(
+            @RequestParam String bucketName,
+            @RequestParam String key,
+            @RequestParam String uploadId,
+            @RequestParam int partNumber,
+            @RequestParam("file") MultipartFile file) {
+
+        try {
+            service.checkBucketExists(bucketName);
+
+            String eTag = service.uploadPart(
+                    bucketName,
+                    key,
+                    uploadId,
+                    partNumber,
+                    file.getInputStream(),
+                    file.getSize()
+            ).get();
+
+            return ResponseEntity.ok(eTag);
+        } catch (InterruptedException | ExecutionException | IOException e) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Erro ao fazer upload da parte: " + e.getMessage(), e);
+        } catch (ResponseStatusException e) {
+            throw e;
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body("Erro inesperado: " + e.getMessage());
+        }
+    }
+
+    @PostMapping("/multipart/complete")
+    @Operation(summary = "Complete a multipart upload")
+    public ResponseEntity<String> completeMultipartUpload(@RequestBody CompleteMultipartUploadRequestDTO request) {
+        try {
+            service.checkBucketExists(request.bucketName());
+
+            List<CompletedPart> completedParts = request.parts().stream()
+                    .map(PartInfo::toCompletedPart)
+                    .collect(Collectors.toList());
+
+            String eTag = service.completeMultipartUpload(
+                    request.bucketName(),
+                    request.key(),
+                    request.uploadId(),
+                    completedParts
+            ).get();
+
+            return ResponseEntity.ok("Upload multipart concluído. ETag final: " + eTag);
+        } catch (InterruptedException | ExecutionException e) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Erro ao completar upload multipart: " + e.getMessage(), e);
+        } catch (ResponseStatusException e) {
+            throw e;
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body("Erro inesperado: " + e.getMessage());
+        }
+    }
+
+    @DeleteMapping("/multipart/abort")
+    @Operation(summary = "Abort an incomplete multipart upload")
+    public ResponseEntity<String> abortMultipartUpload(
+            @RequestParam String bucketName,
+            @RequestParam String key,
+            @RequestParam String uploadId) {
+        try {
+            service.checkBucketExists(bucketName);
+
+            service.abortMultipartUpload(bucketName, key, uploadId).get();
+            return ResponseEntity.ok("Upload multipart abortado com sucesso.");
+        } catch (InterruptedException | ExecutionException e) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Erro ao abortar upload multipart: " + e.getMessage(), e);
+        } catch (ResponseStatusException e) {
+            throw e;
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body("Erro inesperado: " + e.getMessage());
+        }
     }
 
 }

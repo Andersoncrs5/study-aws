@@ -1,4 +1,4 @@
-package com.aws.app1.controller.DTOs;
+package com.aws.app1.controller.S3.S3DTOs;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotNull;
