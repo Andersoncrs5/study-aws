@@ -185,4 +185,18 @@ public class S3Controller {
         return ResponseEntity.ok(url.toString());
     }
 
+    @PostMapping("/presigned-upload-url")
+    @Operation(summary = "Generate a pre-signed URL for direct object upload from frontend to S3")
+    public ResponseEntity<String> getPresignedUploadUrl(@RequestBody PresignedUploadUrlRequestDTO requestDTO) {
+        String presignedUrl = service.generatePresignedUploadUrl(
+                requestDTO.bucketName(),
+                requestDTO.key(),
+                requestDTO.expirationSeconds(),
+                requestDTO.contentType(),
+                requestDTO.userId()
+        );
+        return ResponseEntity.ok(presignedUrl);
+
+    }
+
 }
