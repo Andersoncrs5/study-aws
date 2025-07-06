@@ -1,0 +1,27 @@
+spring:
+  application:
+    name: app1
+  main:
+    allow-bean-definition-overriding: true
+
+server:
+  port: 8888
+
+springdoc:
+  swagger-ui:
+    path: /api
+  api-docs:
+    path: /v3/api-docs
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+
+aws:
+  dynamodb:
+    endpoint: http://localhost:4566
+    region: us-east-1
+    access-key: test
+    secret-key: test
