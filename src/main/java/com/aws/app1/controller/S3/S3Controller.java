@@ -417,4 +417,41 @@ public class S3Controller {
         }
     }
 
+    @DeleteMapping("/batch-delete")
+    @Operation(summary = "Delete multiple objects (or specific versions) from an S3 bucket in a single request")
+    public ResponseEntity<?> deleteMultipleObjects(@RequestBody BulkDeleteRequest request) {
+        try {
+            service.checkBucketExists(request.bucketName());
+
+            if (request.objectsToDelete().isEmpty()) {
+                return ResponseEntity.badRequest().body(new BulkDeleteResponseDTO(Collections.emptyList(), Collections.emptyList(), "Nenhum objeto para deletar fornecido."));
+            }
+            if (request.objectsToDelete().size() > 1000) {
+                return ResponseEntity.badRequest().body(new BulkDeleteResponseDTO(Collections.emptyList(), Collections.emptyList(), "Número máximo de objetos para deleção em massa é 1000."));
+            }
+
+            List<ObjectIdentifier> objectIdentifiers = request.objectsToDelete().stream()
+                    .map(ObjectToDeleteInfo::toObjectIdentifier)
+                    .toList();
+
+            DeleteObjectsResponse response = service.deleteMultipleObjects(
+                    request.bucketName(),
+                    objectIdentifiers
+            ).get();
+
+            List<String> deletedKeys = response.deleted().stream()
+                    .map(DeletedObject::key)
+                    .toList();
+
+            String message = String.format("Deleção em massa concluída: %d objetos deletados.", deletedKeys.size());
+            return ResponseEntity.ok("Deleted items");
+        } catch (InterruptedException | ExecutionException e) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Erro ao realizar deleção em massa: " + e.getMessage(), e);
+        } catch (ResponseStatusException e) {
+            throw e;
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(new BulkDeleteResponseDTO(Collections.emptyList(), Collections.emptyList(), "Erro inesperado: " + e.getMessage()));
+        }
+    }
+
 }

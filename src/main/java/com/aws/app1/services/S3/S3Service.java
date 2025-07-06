@@ -623,4 +623,36 @@ public class S3Service {
 
     }
 
+    @Async
+    public CompletableFuture<DeleteObjectsResponse> deleteMultipleObjects(String bucketName, List<ObjectIdentifier> objectKeysToDelete) {
+        try {
+            DeleteObjectsRequest deleteObjectsRequest = DeleteObjectsRequest.builder()
+                    .bucket(bucketName)
+                    .delete(Delete.builder()
+                            .objects(objectKeysToDelete)
+                            .quiet(false)
+                            .build())
+                    .build();
+
+            DeleteObjectsResponse response = s3Client.deleteObjects(deleteObjectsRequest);
+
+            if (!response.errors().isEmpty()) {
+                response.errors().forEach(error ->
+                        System.err.printf("Erro ao deletar objeto '%s' (Version ID: %s): %s - %s%n",
+                                error.key(), error.versionId(), error.code(), error.message())
+                );
+            }
+            if (!response.deleted().isEmpty()) {
+                response.deleted().forEach(deleted ->
+                        System.out.printf("Objeto '%s' (Version ID: %s) deletado com sucesso.%n",
+                                deleted.key(), deleted.versionId())
+                );
+            }
+
+            return CompletableFuture.completedFuture(response);
+        } catch (S3Exception e) {
+            System.err.printf("Erro ao realizar deleção em massa no bucket '%s': %s%n", bucketName, e.getMessage());
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Erro ao realizar deleção em massa S3: " + e.getMessage(), e);
+        }
+    }
 }
