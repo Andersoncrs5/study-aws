@@ -19,8 +19,7 @@ public class UserRepositoryDynamodb {
     @Autowired
     private DynamoDbClient dynamoDbClient;
 
-    @Async
-    public CompletableFuture<PutItemResponse> save(User user) {
+    public void save(User user) {
         Map<String, AttributeValue> item = new HashMap<>();
         item.put("userId", AttributeValue.fromS(user.getUserId()));
         item.put("name", AttributeValue.fromS(user.getName()));
@@ -33,12 +32,9 @@ public class UserRepositoryDynamodb {
                 .tableName(tableName)
                 .item(item)
                 .build();
-
-        return CompletableFuture.completedFuture(dynamoDbClient.putItem(request));
     }
 
-    @Async
-    public CompletableFuture<Boolean> existsEmail(String email) {
+    public Boolean existsEmail(String email) {
         GetItemRequest request = GetItemRequest.builder()
                 .tableName(tableName)
                 .key(Map.of("email", AttributeValue.fromS(email)))
@@ -46,25 +42,19 @@ public class UserRepositoryDynamodb {
 
         Map<String, AttributeValue> item = dynamoDbClient.getItem(request).item();
 
-        if (item.isEmpty()) { CompletableFuture.completedFuture(false); }
-
-        return CompletableFuture.completedFuture(true);
+        return !item.isEmpty();
     }
 
-    @Async
-    public CompletableFuture<Integer> deleteById(String userId) {
+    public void deleteById(String userId) {
         DeleteItemRequest request = DeleteItemRequest.builder()
                 .tableName(tableName)
                 .key(Map.of("userId", AttributeValue.fromS(userId)))
                 .build();
 
         dynamoDbClient.deleteItem(request);
-
-        return CompletableFuture.completedFuture(0);
     }
 
-    @Async
-    public CompletableFuture<Optional<Object>> findById(String userId) {
+    public Optional<User> findById(String userId) {
         GetItemRequest request = GetItemRequest.builder()
                 .tableName(tableName)
                 .key(Map.of("userId", AttributeValue.fromS(userId)))
@@ -73,15 +63,14 @@ public class UserRepositoryDynamodb {
         Map<String, AttributeValue> item = dynamoDbClient.getItem(request).item();
 
         if (item.isEmpty()) {
-            return CompletableFuture.completedFuture(Optional.empty());
+            return Optional.empty();
         }
 
         User user = mapToUser(item);
-        return CompletableFuture.completedFuture(Optional.of(user));
+        return Optional.of(user);
     }
 
-    @Async
-    public CompletableFuture<Void> update(String userId, UpdateUserDTO dto) {
+    public void update(String userId, UpdateUserDTO dto) {
 
         Map<String, AttributeValue> values = new HashMap<>();
         values.put(":name", AttributeValue.fromS(dto.name()));
@@ -96,8 +85,6 @@ public class UserRepositoryDynamodb {
                 .build();
 
         dynamoDbClient.updateItem(request);
-
-        return CompletableFuture.completedFuture(null);
     }
 
     private User mapToUser(Map<String, AttributeValue> item) {

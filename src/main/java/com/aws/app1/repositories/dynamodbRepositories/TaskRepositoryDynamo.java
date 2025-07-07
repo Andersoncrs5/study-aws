@@ -3,22 +3,20 @@ package com.aws.app1.repositories.dynamodbRepositories;
 import com.aws.app1.controller.dynamodbController.DTOs.UpdateTaskDTO;
 import com.aws.app1.entities.dynamodbEntities.Task;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.CommandLineRunner;
-import org.springframework.scheduling.annotation.Async;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.*;
 
 import java.time.Instant;
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
 
 public class TaskRepositoryDynamo {
+
     private final String tableName = "tasks";
+
     @Autowired
     private DynamoDbClient dynamoDbClient;
 
-    @Async
-    public CompletableFuture<Void> save(Task task) {
+    public void save(Task task) {
         Map<String, AttributeValue> item = new HashMap<>();
         item.put("taskId", AttributeValue.fromS(UUID.randomUUID().toString()));
         item.put("userId", AttributeValue.fromS(task.getUserId()));
@@ -34,11 +32,9 @@ public class TaskRepositoryDynamo {
                 .build();
         
         dynamoDbClient.putItem(request);
-        return CompletableFuture.completedFuture(null);
     }
 
-    @Async
-    public CompletableFuture<Optional<Object>> findById(String taskId) {
+    public Optional<Task> findById(String taskId) {
         Map<String, AttributeValue> item = new HashMap<>();
         item.put("taskId", AttributeValue.fromS(taskId));
         
@@ -50,15 +46,13 @@ public class TaskRepositoryDynamo {
         Map<String, AttributeValue> response = dynamoDbClient.getItem(request).item();
 
         if (response.isEmpty()) {
-            return CompletableFuture.completedFuture(Optional.empty());
+            return Optional.empty();
         }
 
-        return CompletableFuture.completedFuture(Optional.of(mapToTask(response)));
+        return Optional.of(mapToTask(response));
     }
 
-    @Async
-    public CompletableFuture<Void> deleteById(String taskId) {
-
+    public void deleteById(String taskId) {
         Map<String, AttributeValue> item = new HashMap<>();
         item.put("taskId", AttributeValue.fromS(taskId));
 
@@ -68,11 +62,9 @@ public class TaskRepositoryDynamo {
                 .build();
 
         dynamoDbClient.deleteItem(request);
-        return CompletableFuture.completedFuture(null);
     }
 
-    @Async
-    public CompletableFuture<List<Task>> listByUserId(String userId, int limit) {
+    public List<Task> listByUserId(String userId, int limit) {
         ScanRequest request = ScanRequest.builder()
                 .tableName(tableName)
                 .filterExpression("userId = :uid")
@@ -88,13 +80,12 @@ public class TaskRepositoryDynamo {
             tasks.add(mapToTask(item));
         }
 
-        return CompletableFuture.completedFuture(tasks);
+        return tasks;
     }
 
-    @Async
-    public CompletableFuture<Void> update(String taskId, UpdateTaskDTO task) {
-
+    public void update(String taskId, UpdateTaskDTO task) {
         Map<String, AttributeValue> values = new HashMap<>();
+
         values.put(":title", AttributeValue.fromS(task.title()));
         values.put(":description", AttributeValue.fromS(task.description()));
         values.put(":done", AttributeValue.fromBool(task.done()));
@@ -109,7 +100,6 @@ public class TaskRepositoryDynamo {
                 .build();
 
         dynamoDbClient.updateItem(request);
-        return CompletableFuture.completedFuture(null);
     }
 
     private Task mapToTask(Map<String, AttributeValue> item) {

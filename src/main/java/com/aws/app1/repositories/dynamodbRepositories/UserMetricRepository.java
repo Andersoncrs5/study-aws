@@ -2,7 +2,6 @@ package com.aws.app1.repositories.dynamodbRepositories;
 
 import com.aws.app1.entities.dynamodbEntities.UserMetric;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.scheduling.annotation.Async;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.*;
 
@@ -10,15 +9,13 @@ import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
 
 public class UserMetricRepository {
     private final String tableName = "users_metric";
     @Autowired
     private DynamoDbClient dynamoDbClient;
 
-    @Async
-    public CompletableFuture<Void> save(UserMetric metric) {
+    public void save(UserMetric metric) {
         Map<String, AttributeValue> item = new HashMap<>();
         item.put("userId", AttributeValue.fromS(metric.getUserId()));
         item.put("allTasks", AttributeValue.fromN(String.valueOf(metric.getAllTasks())));
@@ -33,12 +30,9 @@ public class UserMetricRepository {
                 .build();
 
         PutItemResponse response = dynamoDbClient.putItem(request);
-
-        return CompletableFuture.completedFuture(null);
     }
 
-    @Async
-    public CompletableFuture<Optional<UserMetric>> findByUserId(String userId) {
+    public Optional<UserMetric> findByUserId(String userId) {
         GetItemRequest request = GetItemRequest.builder()
                 .tableName(tableName)
                 .key(Map.of("userId", AttributeValue.fromS(userId)))
@@ -47,11 +41,11 @@ public class UserMetricRepository {
         Map<String, AttributeValue> item = dynamoDbClient.getItem(request).item();
 
         if (item == null || item.isEmpty()) {
-            return CompletableFuture.completedFuture(Optional.empty());
+            return Optional.empty();
         }
 
         UserMetric metric = mapToUserMetric(item);
-        return CompletableFuture.completedFuture(Optional.of(metric));
+        return Optional.of(metric);
     }
 
     public void update(UserMetric metric) {
