@@ -67,13 +67,12 @@ public class DynamoDbTableInitializer implements CommandLineRunner {
             dynamoDbClient.createTable(request);
             System.out.println("Table tasks created!");
         }
-
     }
 
     private void createUserMetric() {
         String tableName = "users_metric";
 
-        if (!tableExists(tableName)) { // Correção aqui
+        if (tableExists(tableName)) {
             CreateTableRequest request = CreateTableRequest.builder()
                     .tableName(tableName)
                     .keySchema(KeySchemaElement.builder()
