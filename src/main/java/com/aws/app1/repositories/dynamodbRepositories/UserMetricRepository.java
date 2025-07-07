@@ -2,6 +2,7 @@ package com.aws.app1.repositories.dynamodbRepositories;
 
 import com.aws.app1.entities.dynamodbEntities.UserMetric;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Repository;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.*;
 
@@ -10,6 +11,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
+@Repository
 public class UserMetricRepository {
     private final String tableName = "users_metric";
     @Autowired

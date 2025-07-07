@@ -12,6 +12,7 @@ import java.net.URI;
 
 @Configuration
 public class DynamoDBConfig {
+
     @Value("${aws.dynamodb.endpoint}")
     private String endpoint;
 
@@ -34,5 +35,6 @@ public class DynamoDBConfig {
                 ))
                 .build();
     }
+
 
 }

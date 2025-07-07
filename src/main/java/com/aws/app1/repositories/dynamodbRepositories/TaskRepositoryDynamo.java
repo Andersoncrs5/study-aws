@@ -3,12 +3,14 @@ package com.aws.app1.repositories.dynamodbRepositories;
 import com.aws.app1.controller.dynamodbController.DTOs.UpdateTaskDTO;
 import com.aws.app1.entities.dynamodbEntities.Task;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Repository;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.*;
 
 import java.time.Instant;
 import java.util.*;
 
+@Repository
 public class TaskRepositoryDynamo {
 
     private final String tableName = "tasks";
@@ -18,7 +20,7 @@ public class TaskRepositoryDynamo {
 
     public void save(Task task) {
         Map<String, AttributeValue> item = new HashMap<>();
-        item.put("taskId", AttributeValue.fromS(UUID.randomUUID().toString()));
+        item.put("taskId", AttributeValue.fromS(task.getTaskId()));
         item.put("userId", AttributeValue.fromS(task.getUserId()));
         item.put("title", AttributeValue.fromS(task.getTitle()));
         item.put("description", AttributeValue.fromS(task.getDescription()));

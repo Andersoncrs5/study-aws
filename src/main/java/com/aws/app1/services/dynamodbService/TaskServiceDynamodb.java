@@ -3,6 +3,7 @@ package com.aws.app1.services.dynamodbService;
 import com.aws.app1.controller.dynamodbController.DTOs.UpdateTaskDTO;
 import com.aws.app1.entities.dynamodbEntities.Task;
 import com.aws.app1.repositories.dynamodbRepositories.TaskRepositoryDynamo;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -14,10 +15,10 @@ import java.util.Optional;
 import java.util.UUID;
 
 @Service
+@RequiredArgsConstructor
 public class TaskServiceDynamodb {
 
-    @Autowired
-    private TaskRepositoryDynamo taskRepository;
+    private final TaskRepositoryDynamo taskRepository;
 
     public Task createTask(String userId, String title, String description) {
         Task task = Task.builder()

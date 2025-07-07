@@ -6,6 +6,9 @@ import org.springframework.stereotype.Component;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.*;
 
+import java.util.Arrays;
+import java.util.Collections;
+
 
 @Component
 public class DynamoDbTableInitializer implements CommandLineRunner {
@@ -17,6 +20,7 @@ public class DynamoDbTableInitializer implements CommandLineRunner {
     public void run(String... args) {
         createUserTable();
         createTaskTable();
+        createUserMetric();
     }
 
     private void createUserTable() {
@@ -33,9 +37,12 @@ public class DynamoDbTableInitializer implements CommandLineRunner {
                             .attributeName("userId")
                             .attributeType(ScalarAttributeType.S)
                             .build())
+                    .provisionedThroughput(ProvisionedThroughput.builder()
+                            .readCapacityUnits(20L)
+                            .writeCapacityUnits(20L)
+                            .build())
                     .billingMode(BillingMode.PAY_PER_REQUEST)
                     .build();
-
 
             dynamoDbClient.createTable(request);
             System.out.println("Table users created!");
@@ -53,19 +60,30 @@ public class DynamoDbTableInitializer implements CommandLineRunner {
                             .attributeName("taskId")
                             .keyType(KeyType.HASH)
                             .build())
-                    .attributeDefinitions(AttributeDefinition.builder()
-                            .attributeName("taskId")
-                            .attributeType(ScalarAttributeType.S)
-                            .build())
-                    .attributeDefinitions(AttributeDefinition.builder()
-                            .attributeName("userId")
-                            .attributeType(ScalarAttributeType.S)
+                    .attributeDefinitions(Collections.singletonList(
+                            AttributeDefinition.builder()
+                                    .attributeName("taskId")
+                                    .attributeType(ScalarAttributeType.S)
+                                    .build()
+                    ))
+                    .provisionedThroughput(ProvisionedThroughput.builder()
+                            .writeCapacityUnits(20L)
+                            .readCapacityUnits(20L)
                             .build())
                     .billingMode(BillingMode.PAY_PER_REQUEST)
                     .build();
 
-            dynamoDbClient.createTable(request);
-            System.out.println("Table tasks created!");
+            try {
+                dynamoDbClient.createTable(request);
+                System.out.println("Table " + tableName + " created successfully!");
+            } catch (ResourceInUseException e) {
+                System.out.println("Table " + tableName + " already exists (ResourceInUseException).");
+            } catch (DynamoDbException e) {
+                System.err.println("Error creating table " + tableName + ": " + e.getMessage());
+                System.out.println(e.toString());
+            }
+        } else {
+            System.out.println("Table " + tableName + " already exists, skipping creation.");
         }
     }
 
@@ -83,11 +101,17 @@ public class DynamoDbTableInitializer implements CommandLineRunner {
                             .attributeName("userId")
                             .attributeType(ScalarAttributeType.S)
                             .build())
+                    .provisionedThroughput(ProvisionedThroughput.builder()
+                            .readCapacityUnits(20L)
+                            .writeCapacityUnits(20L)
+                            .build())
                     .billingMode(BillingMode.PAY_PER_REQUEST)
                     .build();
 
             dynamoDbClient.createTable(request);
             System.out.println("Tabela 'users_metric' criada!");
+        } else {
+            System.out.println("Table user already exist!");
         }
     }
 

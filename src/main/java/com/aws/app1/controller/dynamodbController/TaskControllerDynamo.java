@@ -11,12 +11,12 @@ import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/v1/dynamo/user")
+@RequestMapping("/v1/dynamo/task")
 public class TaskControllerDynamo {
 
     private final TaskServiceDynamodb taskService;
 
-    @PostMapping
+    @PostMapping("create")
     public ResponseEntity<Task> create(@RequestBody Task taskRequest) {
         Task task = taskService.createTask(
                 taskRequest.getUserId(),
@@ -26,24 +26,24 @@ public class TaskControllerDynamo {
         return ResponseEntity.ok(task);
     }
 
-    @GetMapping("/{taskId}")
+    @GetMapping("/getById/{taskId}")
     public ResponseEntity<Task> getById(@PathVariable String taskId) {
         Task task = taskService.findById(taskId);
         return ResponseEntity.ok(task);
     }
 
-    @GetMapping("/user/{userId}/{limit}")
+    @GetMapping("/getByUser/{userId}/{limit}")
     public ResponseEntity<List<Task>> getByUser(@PathVariable String userId, @PathVariable int limit) {
         return ResponseEntity.ok(taskService.listByUser(userId, limit));
     }
 
-    @PutMapping("/{taskId}")
+    @PutMapping("/update/{taskId}")
     public ResponseEntity<?> update(@PathVariable String taskId, @RequestBody UpdateTaskDTO taskRequest) {
         taskService.updateTask(taskId, taskRequest);
         return ResponseEntity.ok("Updated");
     }
 
-    @DeleteMapping("/{taskId}")
+    @DeleteMapping("/delete/{taskId}")
     public ResponseEntity<Void> delete(@PathVariable String taskId) {
         taskService.deleteTask(taskId);
         return ResponseEntity.noContent().build();

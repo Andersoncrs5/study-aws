@@ -3,17 +3,14 @@ package com.aws.app1.repositories.dynamodbRepositories;
 import com.aws.app1.controller.dynamodbController.DTOs.UpdateUserDTO;
 import com.aws.app1.entities.dynamodbEntities.User;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.scheduling.annotation.Async;
+import org.springframework.stereotype.Repository;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.*;
 
 import java.time.Instant;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
+import java.util.*;
 
+@Repository
 public class UserRepositoryDynamodb {
     private final String tableName = "users";
     @Autowired
@@ -32,6 +29,8 @@ public class UserRepositoryDynamodb {
                 .tableName(tableName)
                 .item(item)
                 .build();
+
+        dynamoDbClient.putItem(request);
     }
 
     public Boolean existsEmail(String email) {
@@ -73,18 +72,33 @@ public class UserRepositoryDynamodb {
     public void update(String userId, UpdateUserDTO dto) {
 
         Map<String, AttributeValue> values = new HashMap<>();
-        values.put(":name", AttributeValue.fromS(dto.name()));
         values.put(":password", AttributeValue.fromS(dto.password()));
         values.put(":updatedAt", AttributeValue.fromS(Instant.now().toString()));
 
         UpdateItemRequest request = UpdateItemRequest.builder()
                 .tableName(tableName)
                 .key(Map.of("userId", AttributeValue.fromS(userId)))
-                .updateExpression("SET name = :name, email = :email, password = :password, updatedAt = :updatedAt")
+                .updateExpression("SET password = :password, updatedAt = :updatedAt")
                 .expressionAttributeValues(values)
                 .build();
 
         dynamoDbClient.updateItem(request);
+    }
+
+    public List<User> listUser() {
+        ScanRequest request = ScanRequest.builder()
+                .tableName(tableName)
+                .build();
+
+        ScanResponse scan = dynamoDbClient.scan(request);
+
+        List<User> users = new ArrayList<>();
+
+        for (Map<String, AttributeValue> map : scan.items()) {
+            users.add(mapToUser(map));
+        }
+
+        return users;
     }
 
     private User mapToUser(Map<String, AttributeValue> item) {

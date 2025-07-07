@@ -13,9 +13,9 @@ import java.time.Instant;
 @AllArgsConstructor
 public class UserMetric {
     private String userId;
-    private Long allTasks;
-    private Long allTasksDone;
-    private Long allTasksNotDone;
+    private Long allTasks = 0L;
+    private Long allTasksDone = 0L;
+    private Long allTasksNotDone = 0L;
     private Instant createdAt;
     private Instant updatedAt;
 }

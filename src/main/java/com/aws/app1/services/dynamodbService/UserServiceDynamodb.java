@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -18,7 +19,7 @@ import java.util.concurrent.CompletableFuture;
 @RequiredArgsConstructor
 public class UserServiceDynamodb {
 
-    private UserRepositoryDynamodb repository;
+    private final UserRepositoryDynamodb repository;
 
     public User create(String name, String email, String password) {
         User user = User.builder()
@@ -49,6 +50,10 @@ public class UserServiceDynamodb {
 
     public void updateUser(String userId, UpdateUserDTO dto) {
         this.repository.update(userId, dto);
+    }
+
+    public List<User> listUser() {
+        return this.repository.listUser();
     }
 
 }
